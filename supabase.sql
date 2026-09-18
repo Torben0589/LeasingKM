@@ -1,0 +1,7 @@
+create extension if not exists pgcrypto;
+create table if not exists public.vehicles (id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,name text not null,short_name text not null,contract_start date not null,contract_end date not null,start_odometer integer not null default 0,total_km integer not null check(total_km>0),tolerance_km integer not null default 0,overage_eur_km numeric(10,4) not null default 0,underage_eur_km numeric(10,4) not null default 0,created_at timestamptz not null default now());
+create table if not exists public.readings (id uuid primary key default gen_random_uuid(),user_id uuid not null references auth.users(id) on delete cascade,vehicle_id uuid not null references public.vehicles(id) on delete cascade,reading_date date not null,odometer integer not null check(odometer>=0),note text,created_at timestamptz not null default now());
+create index if not exists readings_vehicle_date_idx on public.readings(vehicle_id,reading_date desc);
+alter table public.vehicles enable row level security;alter table public.readings enable row level security;
+drop policy if exists "own vehicles" on public.vehicles;create policy "own vehicles" on public.vehicles for all using(auth.uid()=user_id) with check(auth.uid()=user_id);
+drop policy if exists "own readings" on public.readings;create policy "own readings" on public.readings for all using(auth.uid()=user_id) with check(auth.uid()=user_id and exists(select 1 from public.vehicles v where v.id=vehicle_id and v.user_id=auth.uid()));
