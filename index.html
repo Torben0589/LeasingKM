@@ -1,8 +1,119 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#0b172a"><title>Leasing Kilometer</title><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="styles.css"><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body>
-<header><div><small>MEIN FUHRPARK</small><h1>Leasing Kilometer</h1></div><button id="logout" class="ghost hidden">Abmelden</button></header>
-<main>
-<section id="setup" class="panel hidden"><h2>Einmalige Einrichtung</h2><p>Trage URL und Publishable/Anon Key deines Supabase-Projekts ein. Sie werden nur auf diesem Gerät gespeichert.</p><label>Supabase URL<input id="sbUrl" placeholder="https://….supabase.co"></label><label>Publishable / Anon Key<input id="sbKey" type="password" placeholder="eyJ… oder sb_publishable_…"></label><button id="saveSetup">Speichern</button><details><summary>Wo finde ich diese Angaben?</summary><p>Supabase Dashboard → Project Settings → API. Niemals den Secret- oder Service-Role-Key verwenden.</p></details></section>
-<section id="auth" class="panel hidden"><h2>Geräteübergreifend anmelden</h2><p>Auf jedem Gerät dasselbe Konto verwenden. Dann werden dieselben Fahrzeuge und Kilometerstände geladen.</p><label>E-Mail<input id="email" type="email" autocomplete="email"></label><label>Passwort<input id="password" type="password" autocomplete="current-password" minlength="6"></label><div class="actions"><button id="login">Anmelden</button><button id="signup" class="secondary">Konto anlegen</button></div><button id="resetConfig" class="link">Supabase-Verbindung ändern</button><p id="authMsg" class="msg"></p></section>
-<section id="app" class="hidden"><div id="sync" class="sync">● bereit</div><div id="cards" class="cards"></div><section class="panel"><h2>Neue Ablesung</h2><form id="readingForm"><label>Fahrzeug<select id="vehicleSelect" required></select></label><div class="grid2"><label>Datum<input id="readingDate" type="date" required></label><label>Kilometerstand<input id="odometer" type="number" min="0" step="1" inputmode="numeric" required></label></div><label>Notiz<input id="note" maxlength="100" placeholder="optional"></label><button type="submit">Kilometerstand speichern</button></form><p id="saveMsg" class="msg"></p></section><section class="panel"><div class="row"><h2>Verlauf</h2><button id="refresh" class="ghost">Aktualisieren</button></div><div id="history"></div></section></section>
-</main><dialog id="editDialog"><form method="dialog" id="editForm"><h2>Fahrzeug bearbeiten</h2><input id="editId" type="hidden"><label>Bezeichnung<input id="editName" required></label><label>Kurzname<input id="editShort" required></label><div class="grid2"><label>Beginn<input id="editStart" type="date" required></label><label>Ende<input id="editEnd" type="date" required></label></div><div class="grid2"><label>Gesamtkilometer<input id="editTotal" type="number" required></label><label>Toleranz km<input id="editTolerance" type="number" required></label></div><div class="grid2"><label>Mehrkosten €/km<input id="editOver" type="number" step="0.0001" required></label><label>Erstattung €/km<input id="editUnder" type="number" step="0.0001" required></label></div><div class="actions"><button value="cancel" class="secondary">Abbrechen</button><button id="saveVehicle" value="default">Speichern</button></div></form></dialog>
-<script src="app.js"></script></body></html>
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b1424">
+  <title>Leasing Kilometer</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root{--bg:#091321;--panel:#101d30;--panel2:#14243a;--line:#263952;--text:#f5f7fb;--muted:#9fb0c6;--accent:#3dd6c1;--accent2:#21a895;--danger:#ff6b7a;--warn:#ffc857;--ok:#48d597}
+    *{box-sizing:border-box} body{margin:0;background:linear-gradient(180deg,#08111f,#0d1a2c);color:var(--text);font:15px/1.45 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;min-height:100vh}
+    header{position:sticky;top:0;z-index:5;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;background:rgba(8,17,31,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(12px)}
+    .eyebrow{font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:800}.brand{font-size:20px;font-weight:850}.wrap{max-width:980px;margin:auto;padding:14px 14px calc(90px + env(safe-area-inset-bottom))}
+    .card{background:rgba(16,29,48,.96);border:1px solid var(--line);border-radius:18px;padding:16px;box-shadow:0 12px 35px rgba(0,0,0,.18);margin-bottom:14px}
+    h2,h3{margin:0 0 12px} h2{font-size:18px} h3{font-size:15px;color:#d8e3ef}.muted{color:var(--muted)}.small{font-size:12px}
+    .grid{display:grid;gap:12px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+    label{display:block;color:#a9bbd0;font-size:12px;margin:0 0 5px}input,select,textarea{width:100%;border:1px solid var(--line);background:#0b1728;color:var(--text);padding:12px;border-radius:11px;font:inherit;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+    button{border:0;border-radius:11px;padding:11px 14px;font-weight:800;cursor:pointer;background:var(--accent);color:#06221e}button.secondary{background:#20324a;color:var(--text)}button.danger{background:#3b1e2a;color:#ffb7c0;border:1px solid #6d2c3c}button.ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}button:disabled{opacity:.55;cursor:not-allowed}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.spread{justify-content:space-between}.hide{display:none!important}
+    .kpi{background:var(--panel2);border:1px solid var(--line);border-radius:15px;padding:13px}.kpi b{font-size:22px;display:block;margin-top:3px}.progress{height:9px;background:#07101d;border-radius:99px;overflow:hidden;margin-top:7px}.bar{height:100%;background:var(--accent);border-radius:99px}.status{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:99px;font-weight:800;font-size:12px}.ok{background:#11372f;color:#7ce8ba}.warn{background:#3b3118;color:#ffd979}.bad{background:#41202a;color:#ff9eaa}
+    .tabs{position:fixed;bottom:0;left:0;right:0;z-index:6;display:grid;grid-template-columns:repeat(3,1fr);background:rgba(8,17,31,.97);border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom));backdrop-filter:blur(12px)}.tabs button{background:transparent;color:var(--muted);padding:8px 3px;font-size:12px}.tabs button.active{color:var(--accent)}
+    .list{display:grid;gap:9px}.item{padding:12px;background:#0c192a;border:1px solid var(--line);border-radius:13px}.item strong{font-size:16px}.table{width:100%;border-collapse:collapse}.table td,.table th{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);font-size:13px}.table th{color:var(--muted)}.right{text-align:right!important}.msg{padding:10px 12px;border-radius:10px;background:#172940;color:#dce8f5;margin:10px 0}.msg.err{background:#3d1f2a;color:#ffb7c0}
+    dialog{border:1px solid var(--line);border-radius:18px;background:var(--panel);color:var(--text);width:min(94vw,560px);padding:0}dialog::backdrop{background:rgba(0,0,0,.7)}dialog .inner{padding:17px}
+    @media(max-width:700px){.g3{grid-template-columns:1fr 1fr}.g2{grid-template-columns:1fr}.wrap{padding-left:10px;padding-right:10px}.kpi b{font-size:19px}}
+  </style>
+</head>
+<body>
+<header><div class="eyebrow">MEIN FUHRPARK</div><div class="brand">Leasing Kilometer</div></header>
+<main class="wrap">
+  <section id="setup" class="card hide">
+    <h2>Einmalige Einrichtung</h2><p class="muted">Trage die Projekt-URL und den Publishable-/Anon-Key deines Supabase-Projekts ein. Die Eingaben bleiben nur in diesem Browser gespeichert.</p>
+    <div class="grid"><div><label>Supabase Project URL</label><input id="cfgUrl" placeholder="https://projekt-id.supabase.co" autocomplete="off"></div><div><label>Publishable / Anon Key</label><input id="cfgKey" type="password" placeholder="sb_publishable_... oder eyJ..." autocomplete="off"></div></div>
+    <div id="setupMsg"></div><div class="row" style="margin-top:12px"><button id="saveCfg">Speichern und verbinden</button><button class="ghost" id="clearCfg">Eingaben löschen</button></div>
+    <details style="margin-top:12px"><summary>Wichtiger Hinweis</summary><p class="small muted">Verwende niemals den service_role-Key. Eine URL mit <b>/rest/v1</b> wird automatisch auf die Projekt-URL korrigiert.</p></details>
+  </section>
+
+  <section id="auth" class="card hide">
+    <h2>Anmelden</h2><p class="muted">Deine Daten sind durch Supabase-Anmeldung und Row Level Security geschützt.</p>
+    <div class="grid g2"><div><label>E-Mail</label><input id="email" type="email" autocomplete="email"></div><div><label>Passwort</label><input id="password" type="password" autocomplete="current-password"></div></div>
+    <div id="authMsg"></div><div class="row" style="margin-top:12px"><button id="login">Anmelden</button><button class="secondary" id="signup">Konto anlegen</button><button class="ghost" id="backSetup">Verbindung ändern</button></div>
+  </section>
+
+  <section id="app" class="hide">
+    <div class="row spread" style="margin-bottom:12px"><div><div class="small muted">Angemeldet als</div><b id="userMail"></b></div><button class="ghost" id="logout">Abmelden</button></div>
+    <section id="viewDashboard">
+      <div class="card"><div class="row spread"><div><h2>Dashboard</h2><div class="muted small">Tagesgenaue Leasingübersicht</div></div><select id="vehicleSelect" style="max-width:300px"></select></div></div>
+      <div id="emptyDash" class="card hide"><h3>Noch kein Fahrzeug vorhanden</h3><p class="muted">Lege unter „Fahrzeuge“ dein erstes Leasingfahrzeug an.</p><button onclick="showView('vehicles')">Fahrzeug anlegen</button></div>
+      <div id="dashContent" class="hide">
+        <div class="grid g3">
+          <div class="kpi"><span class="muted small">Aktueller Tachostand</span><b id="kOdo">–</b><span id="kDate" class="small muted">–</span></div>
+          <div class="kpi"><span class="muted small">Gefahren seit Start</span><b id="kDriven">–</b><span class="small muted">Leasingkilometer</span></div>
+          <div class="kpi"><span class="muted small">Abweichung zum Soll</span><b id="kDiff">–</b><span id="kStatus" class="status">–</span></div>
+          <div class="kpi"><span class="muted small">Restbudget inkl. Toleranz</span><b id="kRemain">–</b><div class="progress"><div id="budgetBar" class="bar"></div></div></div>
+          <div class="kpi"><span class="muted small">Prognose Vertragsende</span><b id="kForecast">–</b><span class="small muted">gefahrene Leasingkilometer</span></div>
+          <div class="kpi"><span class="muted small">Prognose Mehrkosten</span><b id="kCost">–</b><span id="kOver" class="small muted">–</span></div>
+        </div>
+        <div class="card" style="margin-top:14px"><h3>Neuen Kilometerstand erfassen</h3><div class="grid g3"><div><label>Datum</label><input id="quickDate" type="date"></div><div><label>Tachostand</label><input id="quickOdo" type="number" min="0" step="1"></div><div><label>Notiz optional</label><input id="quickNote" placeholder="z. B. Monatsstand"></div></div><div id="quickMsg"></div><button id="saveReading" style="margin-top:12px">Kilometerstand speichern</button></div>
+      </div>
+    </section>
+
+    <section id="viewVehicles" class="hide">
+      <div class="card"><div class="row spread"><div><h2>Fahrzeuge</h2><div class="small muted">Verträge und Kilometerbudgets</div></div><button id="newVehicle">+ Fahrzeug</button></div></div><div id="vehicleList" class="list"></div>
+    </section>
+
+    <section id="viewReadings" class="hide">
+      <div class="card"><div class="row spread"><div><h2>Kilometerstände</h2><div class="small muted">Verlauf aller Eingaben</div></div><select id="readingVehicleSelect" style="max-width:300px"></select></div></div><div class="card" style="overflow:auto"><table class="table"><thead><tr><th>Datum</th><th class="right">Tachostand</th><th>Notiz</th><th></th></tr></thead><tbody id="readingRows"></tbody></table></div>
+    </section>
+  </section>
+</main>
+<nav id="tabs" class="tabs hide"><button data-v="dashboard" class="active">Übersicht</button><button data-v="vehicles">Fahrzeuge</button><button data-v="readings">Kilometerstände</button></nav>
+
+<dialog id="vehicleDialog"><div class="inner"><div class="row spread"><h2 id="vehicleDialogTitle">Fahrzeug anlegen</h2><button class="ghost" onclick="vehicleDialog.close()">Schließen</button></div><input id="vId" type="hidden"><div class="grid g2">
+<div><label>Fahrzeugname</label><input id="vName" placeholder="z. B. VW Tiguan"></div><div><label>Kurzname</label><input id="vShort" placeholder="z. B. Tiguan"></div>
+<div><label>Vertragsbeginn</label><input id="vStart" type="date"></div><div><label>Vertragsende</label><input id="vEnd" type="date"></div>
+<div><label>Tachostand bei Übergabe</label><input id="vStartOdo" type="number" min="0" step="1"></div><div><label>Vertragskilometer gesamt</label><input id="vTotal" type="number" min="1" step="1"></div>
+<div><label>Toleranz in km</label><input id="vTolerance" type="number" min="0" step="1" value="0"></div><div><label>Kosten je Mehr-km in EUR</label><input id="vOverage" type="number" min="0" step="0.0001" value="0"></div>
+</div><div id="vehicleMsg"></div><button id="saveVehicle" style="margin-top:14px">Fahrzeug speichern</button></div></dialog>
+
+<script>
+let sb=null,user=null,vehicles=[],selectedVehicle=null;
+const $=id=>document.getElementById(id), fmtKm=n=>`${Math.round(Number(n)||0).toLocaleString('de-DE')} km`, fmtEur=n=>(Number(n)||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+function msg(id,text,err=false){$(id).innerHTML=text?`<div class="msg ${err?'err':''}">${text}</div>`:''}
+function normalizeUrl(v){return v.trim().replace(/\/+$/,'').replace(/\/rest\/v1$/,'')}
+function switchMain(name){['setup','auth','app'].forEach(x=>$(x).classList.toggle('hide',x!==name));$('tabs').classList.toggle('hide',name!=='app')}
+function showView(v){['Dashboard','Vehicles','Readings'].forEach(n=>$('view'+n).classList.toggle('hide',n.toLowerCase()!==v));document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.v===v));if(v==='readings')loadReadings();if(v==='vehicles')renderVehicles()}
+window.showView=showView;
+
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>showView(b.dataset.v));
+$('quickDate').value=new Date().toISOString().slice(0,10);
+
+async function init(){const url=localStorage.getItem('lease_sb_url'),key=localStorage.getItem('lease_sb_key');if(!url||!key){switchMain('setup');return}try{sb=supabase.createClient(url,key);const {data:{session}}=await sb.auth.getSession();if(session){user=session.user;await enterApp()}else switchMain('auth')}catch(e){switchMain('setup');msg('setupMsg','Verbindung konnte nicht initialisiert werden: '+e.message,true)}}
+$('saveCfg').onclick=async()=>{let url=normalizeUrl($('cfgUrl').value),key=$('cfgKey').value.trim();if(!/^https:\/\/[a-z0-9-]+\.supabase\.co$/i.test(url)){msg('setupMsg','Bitte die Projekt-URL im Format https://projekt-id.supabase.co eingeben.',true);return}if(!key){msg('setupMsg','Bitte den Publishable-/Anon-Key eingeben.',true);return}localStorage.setItem('lease_sb_url',url);localStorage.setItem('lease_sb_key',key);msg('setupMsg','Gespeichert. Verbindung wird geöffnet.');await init()};
+$('clearCfg').onclick=()=>{$('cfgUrl').value='';$('cfgKey').value='';localStorage.removeItem('lease_sb_url');localStorage.removeItem('lease_sb_key')};
+$('backSetup').onclick=()=>{localStorage.removeItem('lease_sb_url');localStorage.removeItem('lease_sb_key');location.reload()};
+$('login').onclick=async()=>{msg('authMsg','');const {data,error}=await sb.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)return msg('authMsg',error.message,true);user=data.user;await enterApp()};
+$('signup').onclick=async()=>{msg('authMsg','');const {data,error}=await sb.auth.signUp({email:$('email').value.trim(),password:$('password').value});if(error)return msg('authMsg',error.message,true);msg('authMsg',data.session?'Konto angelegt und angemeldet.':'Konto angelegt. Bitte gegebenenfalls die Bestätigungs-E-Mail öffnen.');if(data.session){user=data.user;await enterApp()}};
+$('logout').onclick=async()=>{await sb.auth.signOut();location.reload()};
+
+async function enterApp(){switchMain('app');$('userMail').textContent=user.email||'';await loadVehicles()}
+async function loadVehicles(){const {data,error}=await sb.from('vehicles').select('*').order('created_at');if(error){alert('Fahrzeuge konnten nicht geladen werden: '+error.message);return}vehicles=data||[];fillVehicleSelects();renderVehicles();selectedVehicle=vehicles.find(v=>v.id===$('vehicleSelect').value)||vehicles[0]||null;await renderDashboard()}
+function fillVehicleSelects(){for(const id of ['vehicleSelect','readingVehicleSelect']){const old=$(id).value;$(id).innerHTML=vehicles.map(v=>`<option value="${v.id}">${esc(v.short_name||v.name)}</option>`).join('');if(vehicles.some(v=>v.id===old))$(id).value=old}}
+$('vehicleSelect').onchange=async()=>{selectedVehicle=vehicles.find(v=>v.id===$('vehicleSelect').value);await renderDashboard()};$('readingVehicleSelect').onchange=loadReadings;
+function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function days(a,b){return Math.max(0,(new Date(b+'T12:00:00')-new Date(a+'T12:00:00'))/86400000)}
+async function renderDashboard(){const empty=!selectedVehicle;$('emptyDash').classList.toggle('hide',!empty);$('dashContent').classList.toggle('hide',empty);if(empty)return;const {data,error}=await sb.from('readings').select('*').eq('vehicle_id',selectedVehicle.id).order('reading_date',{ascending:false}).limit(1);if(error){alert(error.message);return}const r=data?.[0];const today=new Date().toISOString().slice(0,10), start=selectedVehicle.contract_start,end=selectedVehicle.contract_end,total=Number(selectedVehicle.total_km),tol=Number(selectedVehicle.tolerance_km||0),startOdo=Number(selectedVehicle.start_odometer||0),nowOdo=r?Number(r.odometer):startOdo,driven=Math.max(0,nowOdo-startOdo),contractDays=Math.max(1,days(start,end)),elapsed=Math.min(contractDays,days(start,today)),expected=total*(elapsed/contractDays),diff=driven-expected,rate=elapsed>0?driven/elapsed:0,forecast=rate*contractDays,over=Math.max(0,forecast-total-tol),cost=over*Number(selectedVehicle.overage_eur_km||0),remain=total+tol-driven,pct=Math.min(100,Math.max(0,driven/(total+tol)*100));
+$('kOdo').textContent=fmtKm(nowOdo);$('kDate').textContent=r?`Stand ${new Date(r.reading_date+'T12:00:00').toLocaleDateString('de-DE')}`:'Noch kein Eintrag';$('kDriven').textContent=fmtKm(driven);$('kDiff').textContent=(diff>0?'+':'')+fmtKm(diff);$('kRemain').textContent=fmtKm(remain);$('budgetBar').style.width=pct+'%';$('budgetBar').style.background=pct>100?'var(--danger)':pct>85?'var(--warn)':'var(--accent)';$('kForecast').textContent=fmtKm(forecast);$('kCost').textContent=fmtEur(cost);$('kOver').textContent=over?`${fmtKm(over)} kostenpflichtig`:'Keine Mehrkilometer prognostiziert';const cls=diff<=0?'ok':diff<=total*.03?'warn':'bad';$('kStatus').className='status '+cls;$('kStatus').textContent=diff<=0?'Im Plan':diff<=total*.03?'Leicht über Soll':'Über Soll'}
+
+$('saveReading').onclick=async()=>{if(!selectedVehicle)return;const date=$('quickDate').value,odo=Number($('quickOdo').value),note=$('quickNote').value.trim();if(!date||!Number.isFinite(odo)||odo<0)return msg('quickMsg','Bitte Datum und gültigen Tachostand eingeben.',true);const {error}=await sb.from('readings').insert({user_id:user.id,vehicle_id:selectedVehicle.id,reading_date:date,odometer:odo,note:note||null});if(error)return msg('quickMsg',error.message,true);$('quickOdo').value='';$('quickNote').value='';msg('quickMsg','Kilometerstand gespeichert.');await renderDashboard()};
+
+function renderVehicles(){const box=$('vehicleList');if(!vehicles.length){box.innerHTML='<div class="card muted">Noch keine Fahrzeuge angelegt.</div>';return}box.innerHTML=vehicles.map(v=>`<div class="item"><div class="row spread"><div><strong>${esc(v.name)}</strong><div class="small muted">${new Date(v.contract_start+'T12:00:00').toLocaleDateString('de-DE')} bis ${new Date(v.contract_end+'T12:00:00').toLocaleDateString('de-DE')} · ${fmtKm(v.total_km)}</div></div><div class="row"><button class="secondary" onclick="editVehicle('${v.id}')">Bearbeiten</button><button class="danger" onclick="deleteVehicle('${v.id}')">Löschen</button></div></div></div>`).join('')}
+$('newVehicle').onclick=()=>openVehicle();function openVehicle(v=null){$('vehicleDialogTitle').textContent=v?'Fahrzeug bearbeiten':'Fahrzeug anlegen';$('vId').value=v?.id||'';$('vName').value=v?.name||'';$('vShort').value=v?.short_name||'';$('vStart').value=v?.contract_start||'';$('vEnd').value=v?.contract_end||'';$('vStartOdo').value=v?.start_odometer??0;$('vTotal').value=v?.total_km||'';$('vTolerance').value=v?.tolerance_km??0;$('vOverage').value=v?.overage_eur_km??0;msg('vehicleMsg','');$('vehicleDialog').showModal()}
+window.editVehicle=id=>openVehicle(vehicles.find(v=>v.id===id));window.deleteVehicle=async id=>{if(!confirm('Fahrzeug und zugehörige Kilometerstände wirklich löschen?'))return;const {error}=await sb.from('vehicles').delete().eq('id',id);if(error)return alert(error.message);await loadVehicles()};
+$('saveVehicle').onclick=async()=>{const id=$('vId').value,payload={user_id:user.id,name:$('vName').value.trim(),short_name:$('vShort').value.trim(),contract_start:$('vStart').value,contract_end:$('vEnd').value,start_odometer:Number($('vStartOdo').value),total_km:Number($('vTotal').value),tolerance_km:Number($('vTolerance').value||0),overage_eur_km:Number($('vOverage').value||0)};if(!payload.name||!payload.short_name||!payload.contract_start||!payload.contract_end||payload.total_km<=0)return msg('vehicleMsg','Bitte alle Pflichtfelder korrekt ausfüllen.',true);if(payload.contract_end<=payload.contract_start)return msg('vehicleMsg','Das Vertragsende muss nach dem Vertragsbeginn liegen.',true);const q=id?sb.from('vehicles').update(payload).eq('id',id):sb.from('vehicles').insert(payload);const {error}=await q;if(error)return msg('vehicleMsg',error.message,true);$('vehicleDialog').close();await loadVehicles()};
+
+async function loadReadings(){const vid=$('readingVehicleSelect').value;if(!vid){$('readingRows').innerHTML='<tr><td colspan="4" class="muted">Kein Fahrzeug ausgewählt.</td></tr>';return}const {data,error}=await sb.from('readings').select('*').eq('vehicle_id',vid).order('reading_date',{ascending:false});if(error){$('readingRows').innerHTML=`<tr><td colspan="4">${esc(error.message)}</td></tr>`;return}$('readingRows').innerHTML=(data||[]).map(r=>`<tr><td>${new Date(r.reading_date+'T12:00:00').toLocaleDateString('de-DE')}</td><td class="right">${fmtKm(r.odometer)}</td><td>${esc(r.note||'')}</td><td class="right"><button class="danger" onclick="deleteReading('${r.id}')">Löschen</button></td></tr>`).join('')||'<tr><td colspan="4" class="muted">Noch keine Kilometerstände vorhanden.</td></tr>'}
+window.deleteReading=async id=>{if(!confirm('Kilometerstand löschen?'))return;const {error}=await sb.from('readings').delete().eq('id',id);if(error)return alert(error.message);await loadReadings();await renderDashboard()};
+init();
+</script>
+</body>
+</html>
