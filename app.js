@@ -34,4 +34,9 @@ if (driveTypeField) {
 $('#vehicleForm').onsubmit=async e=>{e.preventDefault();const id=$('#editId').value,p={user_id:user.id,name:$('#editName').value.trim(),short_name:$('#editShort').value.trim(),contract_start:$('#editStart').value,contract_end:$('#editEnd').value,start_odometer:+$('#editStartKm').value,total_km:+$('#editTotal').value,tolerance_km:+$('#editTolerance').value,overage_eur_km:+$('#editOver').value,underage_eur_km:+$('#editUnder').value,
 drive_type:normalizeDriveType($('#editDriveType')?.value)};if(!id)p.is_active=true;const q=id?db.from('vehicles').update(p).eq('id',id):db.from('vehicles').insert(p);const {error}=await q;if(error)return alert(error.message);$('#vehicleDialog').close();await load()};
 async function setActive(id,on){if(!on&&!confirm('Fahrzeug archivieren? Alle Ablesungen bleiben erhalten.'))return;const {error}=await db.from('vehicles').update({is_active:on,archived_at:on?null:new Date().toISOString()}).eq('id',id);if(error)alert(error.message);else await load()}
+window.getFuhrparkVehicles = function () {
+  return Array.isArray(vehicles)
+    ? vehicles
+    : [];
+};
 start();
