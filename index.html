@@ -38,6 +38,40 @@ HTML
     <div class="toolbar"><span id="sync" class="sync">● bereit</span><button id="addVehicle">+ Fahrzeug</button></div>
     <nav class="tabs"><button class="tab active" data-view="active">Aktiv</button><button class="tab" data-view="archived">Archiv</button></nav>
     <div id="cards" class="cards"></div>
+
+<section id="pvPanel" class="panel">
+<h2>☀ Energie & PV</h2>
+<div class="grid2">
+<label>
+Netzstrompreis
+<input
+id="pv-grid-price-inline"
+type="number"
+step="0.001"
+value="0.29">
+</label>
+<div>
+<strong>Effektiver Strompreis</strong>
+<div id="pv-effective-inline">
+0,290 €/kWh
+</div>
+</div>
+</div>
+<label>
+PV-Anteil:
+<span id="pv-percent-inline">0 %</span>
+</label>
+<input
+id="pv-share-inline"
+type="range"
+min="0"
+max="100"
+step="1"
+value="0">
+</section>
+<section id="readingPanel" class="panel">
+
+    
     <section id="readingPanel" class="panel">
       <h2>Neue Ablesung</h2>
       <form id="readingForm">
