@@ -12,10 +12,8 @@
  */
 (() => {
     'use strict';
-
     const STORAGE_KEY = 'fuhrpark_mehrkilometer_v40';
     const byId = id => document.getElementById(id);
-
     /**
      * Liefert die aktuell geladenen Fahrzeuge aus app.js.
      * Funktioniert mit der globalen Variable vehicles und optional
@@ -26,33 +24,27 @@
             const list = window.getFuhrparkVehicles();
             return Array.isArray(list) ? list : [];
         }
-
         try {
             return Array.isArray(vehicles) ? vehicles : [];
         } catch (error) {
             return [];
         }
     }
-
     function activeVehicles() {
         return getVehicleList().filter(
             vehicle => vehicle.is_active !== false
         );
     }
-
     function vehicleById(id) {
         return activeVehicles().find(
             vehicle => vehicle.id === id
         );
     }
-
     function getCalculation(vehicle) {
         if (!vehicle) return null;
-
         if (typeof window.getFuhrparkCalculation === 'function') {
             return window.getFuhrparkCalculation(vehicle.id);
         }
-
         try {
             return typeof calc === 'function'
                 ? calc(vehicle)
@@ -66,25 +58,19 @@
             return null;
         }
     }
-
     function numberFrom(id) {
         const field = byId(id);
-
         if (!field) return null;
-
         if (Number.isFinite(field.valueAsNumber)) {
             return field.valueAsNumber;
         }
-
         const value = Number(
             String(field.value).replace(',', '.')
         );
-
         return Number.isFinite(value)
             ? value
             : null;
     }
-
     function cent(value) {
         return `${((Number(value) || 0) * 100).toLocaleString(
             'de-DE',
@@ -94,7 +80,6 @@
             }
         )} Cent/km`;
     }
-
     function euro(value) {
         return `${(Number(value) || 0).toLocaleString(
             'de-DE',
@@ -104,29 +89,23 @@
             }
         )} EUR/km`;
     }
-
     function isElectric(vehicle) {
         return vehicle?.drive_type === 'electric';
     }
-
     function driveLabel(vehicle) {
         if (!vehicle) return 'Nicht hinterlegt';
-
         if (isElectric(vehicle)) {
             return 'Elektro';
         }
-
         const labels = {
             petrol: 'Benzin',
             diesel: 'Diesel',
             hybrid: 'Hybrid',
             other: 'Verbrenner / Sonstige'
         };
-
         return labels[vehicle.drive_type] ||
             'Verbrenner / Sonstige';
     }
-
     function energyCost(side) {
         const consumption = numberFrom(
             `mkv40-consumption-${side}`
@@ -134,7 +113,6 @@
         const price = numberFrom(
             `mkv40-price-${side}`
         );
-
         if (
             consumption === null ||
             price === null ||
@@ -143,10 +121,8 @@
         ) {
             return null;
         }
-
         return consumption / 100 * price;
     }
-
     function savedSettings() {
         try {
             return JSON.parse(
@@ -156,14 +132,12 @@
             return {};
         }
     }
-
     function saveSettings(
         vehicleA,
         vehicleB,
         includeEnergy
     ) {
         const settings = savedSettings();
-
         settings[vehicleA.id] = {
             consumption: numberFrom(
                 'mkv40-consumption-a'
@@ -173,7 +147,6 @@
             ) ?? '',
             includeEnergy
         };
-
         settings[vehicleB.id] = {
             consumption: numberFrom(
                 'mkv40-consumption-b'
@@ -182,16 +155,13 @@
                 'mkv40-price-b'
             ) ?? ''
         };
-
         localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify(settings)
         );
     }
-
     function ensureStyles() {
         if (byId('mkv40-styles')) return;
-
         const style = document.createElement('style');
         style.id = 'mkv40-styles';
         style.textContent = `
@@ -202,67 +172,55 @@
                 overflow: auto;
                 border-radius: 20px;
             }
-
             #mkv40-dialog::backdrop {
                 background: rgba(0, 0, 0, .78);
             }
-
             .mkv40-shell {
                 padding: 18px;
             }
-
             .mkv40-head {
                 display: flex;
                 justify-content: space-between;
                 gap: 12px;
             }
-
             .mkv40-head h2 {
                 margin: 0;
             }
-
             .mkv40-muted {
                 color: var(--muted, #9fb0c5);
                 font-size: 11px;
                 line-height: 1.45;
             }
-
             .mkv40-panels {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 10px;
                 margin-top: 12px;
             }
-
             .mkv40-panel {
                 padding: 12px;
                 background: var(--panel2, #17283d);
                 border-radius: 14px;
             }
-
             .mkv40-panel h3 {
                 margin: 0 0 6px;
             }
-
             .mkv40-field label {
                 display: block;
                 margin: 8px 0 4px;
                 color: var(--muted, #9fb0c5);
                 font-size: 11px;
             }
-
             .mkv40-field input,
             .mkv40-field select {
                 width: 100%;
                 min-width: 0;
             }
-
             .mkv40-grid {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 8px;
             }
-
             .mkv40-check {
                 display: flex;
                 gap: 8px;
@@ -272,16 +230,13 @@
                 background: #07111f66;
                 border-radius: 10px;
             }
-
             .mkv40-check input {
                 width: auto;
                 margin-top: 2px;
             }
-
             .mkv40-hidden {
                 display: none !important;
             }
-
             .mkv40-drive-info {
                 min-height: 46px;
                 display: flex;
@@ -293,36 +248,30 @@
                 border-radius: 12px;
                 font-size: 14px;
             }
-
             .mkv40-live {
                 margin-top: 8px;
                 color: var(--muted, #9fb0c5);
                 font-size: 11px;
             }
-
             .mkv40-actions {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
                 gap: 8px;
                 margin: 12px 0;
             }
-
             .mkv40-error {
                 min-height: 18px;
                 color: #ff9a9a;
             }
-
             .mkv40-result {
                 display: none;
                 padding: 12px;
                 background: #07111f77;
                 border-radius: 14px;
             }
-
             .mkv40-result.visible {
                 display: block;
             }
-
             .mkv40-winner {
                 padding: 10px;
                 color: #7ff2de;
@@ -330,7 +279,6 @@
                 border-radius: 10px;
                 font-weight: 800;
             }
-
             .mkv40-vs {
                 display: grid;
                 grid-template-columns: 1fr auto 1fr;
@@ -338,20 +286,17 @@
                 align-items: center;
                 margin-top: 10px;
             }
-
             .mkv40-cost {
                 padding: 12px;
                 text-align: center;
                 background: var(--panel2, #17283d);
                 border-radius: 11px;
             }
-
             .mkv40-cost b {
                 display: block;
                 margin: 4px;
                 font-size: 18px;
             }
-
             @media (max-width: 650px) {
                 #mkv40-dialog {
                     width: 100vw;
@@ -362,21 +307,17 @@
                     border: 0;
                     border-radius: 0;
                 }
-
                 .mkv40-shell {
                     padding: 12px 9px;
                 }
-
                 .mkv40-panels,
                 .mkv40-vs {
                     grid-template-columns: 1fr;
                 }
             }
         `;
-
         document.head.appendChild(style);
     }
-
     function panel(
         side,
         title,
@@ -389,12 +330,10 @@
                 <div class="mkv40-muted">
                     ${description}
                 </div>
-
                 <div class="mkv40-field">
                     <label>Fahrzeug</label>
                     <select id="mkv40-vehicle-${side}"></select>
                 </div>
-
                 ${optionalEnergy ? `
                     <div
                         id="mkv40-overage-a"
@@ -402,7 +341,6 @@
                     >
                         Mehrkilometerpreis: -
                     </div>
-
                     <label class="mkv40-check">
                         <input
                             id="mkv40-include-a"
@@ -413,13 +351,11 @@
                             Fahrzeug A zusätzlich mitberechnen
                         </span>
                     </label>
-
                     <div
                         id="mkv40-optional-a"
                         class="mkv40-hidden"
                     >
                 ` : ''}
-
                 <div class="mkv40-field">
                     <label>Antriebsart</label>
                     <div
@@ -427,7 +363,6 @@
                         class="mkv40-drive-info"
                     ></div>
                 </div>
-
                 <div class="mkv40-grid">
                     <div class="mkv40-field">
                         <label
@@ -443,7 +378,6 @@
                             inputmode="decimal"
                         >
                     </div>
-
                     <div class="mkv40-field">
                         <label id="mkv40-price-label-${side}">
                             Preis EUR/Liter
@@ -457,22 +391,18 @@
                         >
                     </div>
                 </div>
-
                 <div
                     id="mkv40-energy-${side}"
                     class="mkv40-live"
                 >
                     Energie-/Kraftstoffkosten: -
                 </div>
-
                 ${optionalEnergy ? '</div>' : ''}
             </section>
         `;
     }
-
     function ensureDialog() {
         if (byId('mkv40-dialog')) return;
-
         const dialog = document.createElement('dialog');
         dialog.id = 'mkv40-dialog';
         dialog.innerHTML = `
@@ -492,7 +422,6 @@
                         Schließen
                     </button>
                 </div>
-
                 <div class="mkv40-panels">
                     ${panel(
                         'a',
@@ -500,7 +429,6 @@
                         'Der vertragliche Mehrkilometerpreis wird immer berücksichtigt.',
                         true
                     )}
-
                     ${panel(
                         'b',
                         'B. Alternativfahrzeug',
@@ -508,7 +436,6 @@
                         false
                     )}
                 </div>
-
                 <div class="mkv40-actions">
                     <button
                         id="mkv40-compare"
@@ -516,7 +443,6 @@
                     >
                         Vergleichen
                     </button>
-
                     <button
                         id="mkv40-swap"
                         class="secondary"
@@ -525,12 +451,10 @@
                         Fahrzeuge tauschen
                     </button>
                 </div>
-
                 <div
                     id="mkv40-error"
                     class="mkv40-error"
                 ></div>
-
                 <section
                     id="mkv40-result"
                     class="mkv40-result"
@@ -539,16 +463,13 @@
                         id="mkv40-winner"
                         class="mkv40-winner"
                     ></div>
-
                     <div class="mkv40-vs">
                         <div class="mkv40-cost">
                             <small id="mkv40-name-a"></small>
                             <b id="mkv40-total-a"></b>
                             <small id="mkv40-caption-a"></small>
                         </div>
-
                         <strong>vs.</strong>
-
                         <div class="mkv40-cost">
                             <small id="mkv40-name-b"></small>
                             <b id="mkv40-total-b"></b>
@@ -557,7 +478,6 @@
                             </small>
                         </div>
                     </div>
-
                     <p id="mkv40-difference"></p>
                     <p
                         id="mkv40-breakdown"
@@ -575,39 +495,31 @@
                 </section>
             </div>
         `;
-
         document.body.appendChild(dialog);
-
         byId('mkv40-close').addEventListener(
             'click',
             () => dialog.close()
         );
-
         byId('mkv40-compare').addEventListener(
             'click',
             compare
         );
-
         byId('mkv40-swap').addEventListener(
             'click',
             swap
         );
-
         byId('mkv40-vehicle-a').addEventListener(
             'change',
             () => loadVehicle('a')
         );
-
         byId('mkv40-vehicle-b').addEventListener(
             'change',
             () => loadVehicle('b')
         );
-
         byId('mkv40-include-a').addEventListener(
             'change',
             toggleOptionalA
         );
-
         ['a', 'b'].forEach(side => {
             byId(
                 `mkv40-consumption-${side}`
@@ -615,7 +527,6 @@
                 'input',
                 updateLiveCosts
             );
-
             byId(
                 `mkv40-price-${side}`
             ).addEventListener(
@@ -624,16 +535,12 @@
             );
         });
     }
-
     function ensureButton() {
         if (byId('mkv40-open')) return;
-
         const toolbar = document.querySelector(
             '#app .toolbar'
         );
-
         if (!toolbar) return;
-
         const button = document.createElement('button');
         button.id = 'mkv40-open';
         button.className = 'secondary';
@@ -642,37 +549,29 @@
         button.addEventListener('click', openDialog);
         toolbar.appendChild(button);
     }
-
     function updateLabels(side) {
         const vehicle = vehicleById(
             byId(`mkv40-vehicle-${side}`).value
         );
-
         const electric = isElectric(vehicle);
-
         byId(
             `mkv40-consumption-label-${side}`
         ).textContent = electric
             ? 'Verbrauch kWh/100 km'
             : 'Verbrauch l/100 km';
-
         byId(
             `mkv40-price-label-${side}`
         ).textContent = electric
             ? 'Strompreis EUR/kWh'
             : 'Kraftstoffpreis EUR/Liter';
-
         byId(
             `mkv40-drive-${side}`
         ).textContent = driveLabel(vehicle);
-
         updateLiveCosts();
     }
-
     function updateLiveCosts() {
         ['a', 'b'].forEach(side => {
             const value = energyCost(side);
-
             byId(
                 `mkv40-energy-${side}`
             ).textContent = value === null
@@ -680,53 +579,42 @@
                 : `Energie-/Kraftstoffkosten: ${cent(value)}`;
         });
     }
-
     function toggleOptionalA() {
         byId('mkv40-optional-a').classList.toggle(
             'mkv40-hidden',
             !byId('mkv40-include-a').checked
         );
-
         updateLiveCosts();
     }
-
     function loadVehicle(side) {
         const id = byId(
             `mkv40-vehicle-${side}`
         ).value;
-
         const vehicle = vehicleById(id);
         const saved = savedSettings()[id] || {};
-
         byId(
             `mkv40-consumption-${side}`
         ).value = saved.consumption ??
             vehicle?.default_consumption ??
             '';
-
         byId(
             `mkv40-price-${side}`
         ).value = saved.price ??
             vehicle?.default_energy_price ??
             '';
-
         if (side === 'a') {
             byId('mkv40-include-a').checked =
                 Boolean(saved.includeEnergy);
-
             byId('mkv40-overage-a').textContent =
                 vehicle
                     ? `Mehrkilometerpreis: ${cent(
                         vehicle.overage_eur_km
                     )}`
                     : 'Mehrkilometerpreis: -';
-
             toggleOptionalA();
         }
-
         updateLabels(side);
     }
-
     function selectDefaultVehicles(vehicleList) {
         if (
             !Array.isArray(vehicleList) ||
@@ -737,14 +625,12 @@
                 vehicleB: null
             };
         }
-
         const evaluatedVehicles = vehicleList.map(
             vehicle => ({
                 vehicle,
                 calculation: getCalculation(vehicle)
             })
         );
-
         const vehiclesInRedArea = evaluatedVehicles
             .filter(item =>
                 Number(item.calculation?.over || 0) > 0
@@ -753,11 +639,9 @@
                 Number(second.calculation?.cost || 0) -
                 Number(first.calculation?.cost || 0)
             );
-
         const vehicleA =
             vehiclesInRedArea[0]?.vehicle ||
             vehicleList[0];
-
         const vehicleB =
             evaluatedVehicles.find(item =>
                 item.vehicle.id !== vehicleA.id &&
@@ -767,54 +651,43 @@
                 vehicle.id !== vehicleA.id
             ) ||
             null;
-
         return {
             vehicleA,
             vehicleB
         };
     }
-
     function openDialog() {
         const list = activeVehicles();
-
         if (list.length < 2) {
             alert(
                 'Mindestens zwei aktive Fahrzeuge werden benötigt.'
             );
             return;
         }
-
         const options = list.map(vehicle => `
             <option value="${vehicle.id}">
                 ${vehicle.short_name || vehicle.name}
             </option>
         `).join('');
-
         byId('mkv40-vehicle-a').innerHTML = options;
         byId('mkv40-vehicle-b').innerHTML = options;
-
         const defaults = selectDefaultVehicles(list);
-
         if (defaults.vehicleA) {
             byId('mkv40-vehicle-a').value =
                 defaults.vehicleA.id;
         }
-
         if (defaults.vehicleB) {
             byId('mkv40-vehicle-b').value =
                 defaults.vehicleB.id;
         }
-
         loadVehicle('a');
         loadVehicle('b');
-
         byId('mkv40-result').classList.remove(
             'visible'
         );
         byId('mkv40-error').textContent = '';
         byId('mkv40-dialog').showModal();
     }
-
     function compare() {
         const vehicleA = vehicleById(
             byId('mkv40-vehicle-a').value
@@ -828,9 +701,7 @@
         const energyA = energyCost('a');
         const energyB = energyCost('b');
         const error = byId('mkv40-error');
-
         error.textContent = '';
-
         if (
             !vehicleA ||
             !vehicleB ||
@@ -840,19 +711,16 @@
                 'Bitte zwei unterschiedliche Fahrzeuge wählen.';
             return;
         }
-
         if (energyB === null) {
             error.textContent =
                 'Bitte Verbrauch und Preis für Fahrzeug B vollständig eingeben.';
             return;
         }
-
         if (includeA && energyA === null) {
             error.textContent =
                 'Bitte Verbrauch und Preis für Fahrzeug A vollständig eingeben oder die Option deaktivieren.';
             return;
         }
-
         const overage = Number(
             vehicleA.overage_eur_km || 0
         );
@@ -862,18 +730,15 @@
         const difference = Math.abs(totalA - totalB);
         const nameA = vehicleA.short_name || vehicleA.name;
         const nameB = vehicleB.short_name || vehicleB.name;
-
         saveSettings(
             vehicleA,
             vehicleB,
             includeA
         );
-
         byId('mkv40-winner').textContent =
             totalA <= totalB
                 ? `Der zusätzliche Kilometer mit ${nameA} ist günstiger.`
                 : `Der zusätzliche Kilometer mit ${nameB} ist günstiger.`;
-
         byId('mkv40-name-a').textContent = nameA;
         byId('mkv40-name-b').textContent = nameB;
         byId('mkv40-total-a').textContent = cent(totalA);
@@ -881,49 +746,38 @@
         byId('mkv40-caption-a').textContent = includeA
             ? 'Mehrkilometer plus Energie/Kraftstoff'
             : 'nur Mehrkilometerpreis';
-
         byId('mkv40-difference').innerHTML =
             `Differenz: <strong>${cent(difference)}</strong>`;
-
         byId('mkv40-breakdown').textContent = includeA
             ? `${nameA}: ${cent(overage)} Mehrkilometer + ${cent(energyA)} Energie/Kraftstoff. ${nameB}: ${cent(energyB)} Energie/Kraftstoff.`
             : `${nameA}: ${cent(overage)} Mehrkilometerpreis. ${nameB}: ${cent(energyB)} Energie/Kraftstoff.`;
-
         const consumptionB = numberFrom(
             'mkv40-consumption-b'
         );
         const priceB = numberFrom(
             'mkv40-price-b'
         );
-
         byId('mkv40-formula').textContent =
             `${consumptionB.toLocaleString('de-DE')} /100 km × ` +
             `${priceB.toLocaleString('de-DE')} EUR ÷ 100 = ` +
             `${euro(energyB)} bei ${nameB}.`;
-
         byId('mkv40-result').classList.add(
             'visible'
         );
     }
-
     function swap() {
         const vehicleA = byId(
             'mkv40-vehicle-a'
         ).value;
-
         byId('mkv40-vehicle-a').value =
             byId('mkv40-vehicle-b').value;
-
         byId('mkv40-vehicle-b').value =
             vehicleA;
-
         loadVehicle('a');
         loadVehicle('b');
     }
-
     ensureStyles();
     ensureDialog();
-
     new MutationObserver(ensureButton).observe(
         document.body,
         {
@@ -931,6 +785,5 @@
             subtree: true
         }
     );
-
     ensureButton();
 })();
