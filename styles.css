@@ -166,5 +166,7 @@ dialog { width:min(92%,550px); max-height:88vh; overflow:auto; border:1px solid 
   bottom:20px;
   z-index:1000;
 }
-
+.pv-floating-settings-button {
+  display: none !important;
+}
 
