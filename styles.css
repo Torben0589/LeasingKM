@@ -43,3 +43,128 @@ dialog { width:min(92%,550px); max-height:88vh; overflow:auto; border:1px solid 
   .panel,.vehicle { padding:15px; } .hero { font-size:29px; }
 }
 @media (max-width:370px) { header { padding-left:12px; padding-right:12px; } h1 { font-size:20px; } .metrics { grid-template-columns:1fr; } }
+/* =========================
+   PV Energy Settings
+   ========================= */
+
+.pv-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+}
+
+.pv-modal[hidden] {
+  display: none;
+}
+
+.pv-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  backdrop-filter: blur(6px);
+}
+
+.pv-modal__dialog {
+  position: relative;
+  width: min(92%, 640px);
+  margin: 4rem auto;
+  background: var(--panel);
+  border: 1px solid #ffffff12;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 20px 50px rgba(0,0,0,.4);
+}
+
+.pv-modal__header {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
+
+.pv-eyebrow {
+  color:var(--muted);
+  font-size:12px;
+  margin:0;
+}
+
+.pv-icon-button {
+  width:40px;
+  height:40px;
+  border-radius:12px;
+  background:var(--panel2);
+  color:white;
+}
+
+.pv-field {
+  margin-bottom:20px;
+}
+
+.pv-label-row {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:8px;
+}
+
+.pv-input-with-unit {
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+
+.pv-input-with-unit span {
+  white-space:nowrap;
+  color:var(--muted);
+}
+
+.pv-result-card,
+.pv-example-card {
+  background:var(--panel2);
+  border-radius:16px;
+  padding:14px;
+  margin-top:15px;
+}
+
+.pv-result-card strong {
+  display:block;
+  font-size:22px;
+  margin-top:6px;
+  color:var(--amber);
+}
+
+.pv-range-labels {
+  display:flex;
+  justify-content:space-between;
+  margin-top:6px;
+  font-size:12px;
+  color:var(--muted);
+}
+
+.pv-actions {
+  display:flex;
+  gap:10px;
+  margin-top:20px;
+}
+
+.pv-button {
+  flex:1;
+}
+
+.pv-button--primary {
+  background:var(--mint);
+}
+
+.pv-button--secondary {
+  background:#ffffff10;
+  color:white;
+}
+
+.pv-floating-settings-button {
+  position:fixed;
+  right:20px;
+  bottom:20px;
+  z-index:1000;
+}
+
+
