@@ -14,11 +14,6 @@
     'use strict';
     const STORAGE_KEY = 'fuhrpark_mehrkilometer_v40';
     const byId = id => document.getElementById(id);
-    /**
-     * Liefert die aktuell geladenen Fahrzeuge aus app.js.
-     * Funktioniert mit der globalen Variable vehicles und optional
-     * mit window.getFuhrparkVehicles(), falls diese später ergänzt wird.
-     */
     function getVehicleList() {
         if (typeof window.getFuhrparkVehicles === 'function') {
             const list = window.getFuhrparkVehicles();
@@ -138,6 +133,8 @@
         includeEnergy
     ) {
         const settings = savedSettings();
+        const prevA = settings[vehicleA.id] || {};
+        const prevB = settings[vehicleB.id] || {};
         settings[vehicleA.id] = {
             consumption: numberFrom(
                 'mkv40-consumption-a'
@@ -145,6 +142,7 @@
             price: numberFrom(
                 'mkv40-price-a'
             ) ?? '',
+            priceManual: Boolean(prevA.priceManual),
             includeEnergy
         };
         settings[vehicleB.id] = {
@@ -153,12 +151,82 @@
             ) ?? '',
             price: numberFrom(
                 'mkv40-price-b'
-            ) ?? ''
+            ) ?? '',
+            priceManual: Boolean(prevB.priceManual)
         };
         localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify(settings)
         );
+    }
+
+    /**
+     * Merkt sich fuer ein Fahrzeug, dass der Strompreis manuell
+     * durch den Nutzer geaendert wurde. Ab diesem Zeitpunkt wird
+     * dieses Feld nicht mehr automatisch mit dem effektiven
+     * PV-Strompreis ueberschrieben, bis die Markierung durch
+     * resetPriceToAutomatic() wieder aufgehoben wird.
+     */
+    function markPriceAsManual(vehicleId) {
+        if (!vehicleId) return;
+        const settings = savedSettings();
+        const entry = settings[vehicleId] || {};
+        entry.priceManual = true;
+        settings[vehicleId] = entry;
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(settings)
+        );
+    }
+
+    /**
+     * Liefert true, wenn fuer dieses Fahrzeug bereits ein manuell
+     * eingegebener Strompreis gespeichert ist.
+     */
+    function hasManualPrice(vehicleId) {
+        const entry = savedSettings()[vehicleId];
+        return Boolean(entry && entry.priceManual);
+    }
+
+    /**
+     * Traegt bei Elektrofahrzeugen ohne manuelle Ueberschreibung
+     * den aktuellen effektiven Strompreis aus den PV-Einstellungen
+     * in das Preisfeld ein.
+     */
+    function applyEffectivePrice(side, vehicle) {
+        if (!isElectric(vehicle)) return false;
+        if (hasManualPrice(vehicle.id)) return false;
+        if (
+            !window.PVEnergy ||
+            typeof window.PVEnergy.getEffectiveElectricityPrice !== 'function'
+        ) {
+            return false;
+        }
+        const effectivePrice =
+            window.PVEnergy.getEffectiveElectricityPrice();
+        if (!Number.isFinite(effectivePrice)) return false;
+        byId(`mkv40-price-${side}`).value =
+            effectivePrice.toFixed(3);
+        return true;
+    }
+
+    /**
+     * Synchronisiert alle aktuell im Dialog gewaehlten
+     * Elektrofahrzeuge (ohne manuelle Ueberschreibung) mit dem
+     * aktuellen effektiven Strompreis. Wird beim Speichern der
+     * PV-Einstellungen aufgerufen.
+     */
+    function syncEffectivePricesFromPv() {
+        if (!byId('mkv40-dialog')) return;
+        ['a', 'b'].forEach(side => {
+            const select = byId(`mkv40-vehicle-${side}`);
+            if (!select || !select.value) return;
+            const vehicle = vehicleById(select.value);
+            if (!vehicle) return;
+            if (applyEffectivePrice(side, vehicle)) {
+                updateLiveCosts();
+            }
+        });
     }
     function ensureStyles() {
         if (byId('mkv40-styles')) return;
@@ -531,7 +599,13 @@
                 `mkv40-price-${side}`
             ).addEventListener(
                 'input',
-                updateLiveCosts
+                () => {
+                    const vehicle = vehicleById(
+                        byId(`mkv40-vehicle-${side}`).value
+                    );
+                    if (vehicle) markPriceAsManual(vehicle.id);
+                    updateLiveCosts();
+                }
             );
         });
     }
@@ -602,6 +676,9 @@
         ).value = saved.price ??
             vehicle?.default_energy_price ??
             '';
+        // Bei Elektrofahrzeugen ohne manuelle Ueberschreibung den
+        // effektiven Strompreis aus den PV-Einstellungen uebernehmen.
+        applyEffectivePrice(side, vehicle);
         if (side === 'a') {
             byId('mkv40-include-a').checked =
                 Boolean(saved.includeEnergy);
@@ -776,6 +853,20 @@
         loadVehicle('a');
         loadVehicle('b');
     }
+    // Wird ausserhalb (z. B. von integration-mehrkilometer.js) genutzt,
+    // um bei Bedarf einen bereits sichtbaren Vergleich neu zu berechnen.
+    window.berechneMehrkilometerVergleich = function () {
+        if (byId('mkv40-result')?.classList.contains('visible')) {
+            compare();
+        }
+    };
+
+    // Reagiert auf Aenderungen im "Energie & PV"-Dialog: Solange der
+    // Strompreis fuer ein Elektrofahrzeug nicht manuell ueberschrieben
+    // wurde, wird er automatisch mit dem effektiven PV-Strompreis
+    // synchronisiert (auch waehrend der Vergleichs-Dialog geoeffnet ist).
+    window.addEventListener('pv-settings-changed', syncEffectivePricesFromPv);
+
     ensureStyles();
     ensureDialog();
     new MutationObserver(ensureButton).observe(
