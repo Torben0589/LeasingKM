@@ -190,21 +190,29 @@
 
     /**
      * Traegt bei Elektrofahrzeugen ohne manuelle Ueberschreibung
-     * den aktuellen effektiven Strompreis aus den PV-Einstellungen
-     * in das Preisfeld ein.
+     * den aktuellen effektiven Strompreis in das Preisfeld ein.
+     * Wenn priceOverride angegeben ist (z. B. aus einer noch nicht
+     * gespeicherten Live-Vorschau der PV-Einstellungen), wird dieser
+     * Wert verwendet. Andernfalls wird der zuletzt gespeicherte
+     * effektive Strompreis von window.PVEnergy abgefragt.
      */
-    function applyEffectivePrice(side, vehicle) {
+    function applyEffectivePrice(side, vehicle, priceOverride) {
         if (!isElectric(vehicle)) return false;
         if (hasManualPrice(vehicle.id)) return false;
-        if (
-            !window.PVEnergy ||
-            typeof window.PVEnergy.getEffectiveElectricityPrice !== 'function'
-        ) {
-            return false;
+
+        let effectivePrice = priceOverride;
+        if (!Number.isFinite(effectivePrice)) {
+            if (
+                !window.PVEnergy ||
+                typeof window.PVEnergy.getEffectiveElectricityPrice !== 'function'
+            ) {
+                return false;
+            }
+            effectivePrice =
+                window.PVEnergy.getEffectiveElectricityPrice();
         }
-        const effectivePrice =
-            window.PVEnergy.getEffectiveElectricityPrice();
         if (!Number.isFinite(effectivePrice)) return false;
+
         byId(`mkv40-price-${side}`).value =
             effectivePrice.toFixed(3);
         return true;
@@ -213,17 +221,19 @@
     /**
      * Synchronisiert alle aktuell im Dialog gewaehlten
      * Elektrofahrzeuge (ohne manuelle Ueberschreibung) mit dem
-     * aktuellen effektiven Strompreis. Wird beim Speichern der
-     * PV-Einstellungen aufgerufen.
+     * aktuellen effektiven Strompreis. Wird sowohl beim Speichern
+     * ('pv-settings-changed') als auch live waehrend der Eingabe im
+     * PV-Dialog ('pv-settings-live') aufgerufen.
      */
-    function syncEffectivePricesFromPv() {
+    function syncEffectivePricesFromPv(event) {
         if (!byId('mkv40-dialog')) return;
+        const priceOverride = event?.detail?.effectivePriceEurPerKwh;
         ['a', 'b'].forEach(side => {
             const select = byId(`mkv40-vehicle-${side}`);
             if (!select || !select.value) return;
             const vehicle = vehicleById(select.value);
             if (!vehicle) return;
-            if (applyEffectivePrice(side, vehicle)) {
+            if (applyEffectivePrice(side, vehicle, priceOverride)) {
                 updateLiveCosts();
             }
         });
@@ -864,8 +874,11 @@
     // Reagiert auf Aenderungen im "Energie & PV"-Dialog: Solange der
     // Strompreis fuer ein Elektrofahrzeug nicht manuell ueberschrieben
     // wurde, wird er automatisch mit dem effektiven PV-Strompreis
-    // synchronisiert (auch waehrend der Vergleichs-Dialog geoeffnet ist).
+    // synchronisiert - sowohl sofort waehrend am Regler/Feld gezogen
+    // wird ('pv-settings-live') als auch nach dem Klick auf
+    // "Speichern" ('pv-settings-changed').
     window.addEventListener('pv-settings-changed', syncEffectivePricesFromPv);
+    window.addEventListener('pv-settings-live', syncEffectivePricesFromPv);
 
     ensureStyles();
     ensureDialog();
