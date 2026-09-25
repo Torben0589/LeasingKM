@@ -39,4 +39,5 @@ window.getFuhrparkVehicles = function () {
     ? vehicles
     : [];
 };
+window.vehicles = vehicles;
 start();
