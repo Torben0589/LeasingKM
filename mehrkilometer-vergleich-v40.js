@@ -202,12 +202,95 @@ byId(`mkv40-drive-${side}`).value =
     }
 
 function selectDefaultVehicles(vehicleList) {
-    if (!Array.isArray(vehicleList) || vehicleList.length < 2) {
+    if (
+        !Array.isArray(vehicleList) ||
+        vehicleList.length < 2
+    ) {
         return {
             vehicleA: null,
             vehicleB: null
         };
     }
+
+    /*
+     * Die Prognosewerte werden direkt über die
+     * öffentliche Funktion aus app.js abgefragt.
+     */
+    const evaluatedVehicles = vehicleList.map(vehicle => {
+        let calculation = null;
+
+        if (
+            typeof window.getFuhrparkCalculation ===
+            'function'
+        ) {
+            calculation =
+                window.getFuhrparkCalculation(vehicle.id);
+        }
+
+        return {
+            vehicle,
+            calculation
+        };
+    });
+
+    /*
+     * Fahrzeuge im roten Bereich:
+     * kostenpflichtige Mehrkilometer größer als null.
+     */
+    const vehiclesInRedArea = evaluatedVehicles
+        .filter(item => {
+            return Number(item.calculation?.over || 0) > 0;
+        })
+        .sort((first, second) => {
+            /*
+             * Fahrzeug mit den höchsten prognostizierten
+             * Mehrkosten zuerst.
+             */
+            return (
+                Number(second.calculation?.cost || 0) -
+                Number(first.calculation?.cost || 0)
+            );
+        });
+
+    /*
+     * Fahrzeug A:
+     * das wirtschaftlich kritischste Fahrzeug.
+     *
+     * Falls kein Fahrzeug im roten Bereich liegt,
+     * wird das erste aktive Fahrzeug verwendet.
+     */
+    const vehicleA =
+        vehiclesInRedArea[0]?.vehicle ||
+        vehicleList[0];
+
+    /*
+     * Fahrzeug B:
+     * bevorzugt ein anderes Fahrzeug ohne
+     * prognostizierte Mehrkilometer.
+     */
+    const vehicleB =
+        evaluatedVehicles.find(item => {
+            const isDifferentVehicle =
+                item.vehicle.id !== vehicleA.id;
+
+            const isInFreeArea =
+                Number(item.calculation?.over || 0) === 0;
+
+            return (
+                isDifferentVehicle &&
+                isInFreeArea
+            );
+        })?.vehicle ||
+        vehicleList.find(vehicle => {
+            return vehicle.id !== vehicleA.id;
+        }) ||
+        null;
+
+    return {
+        vehicleA,
+        vehicleB
+    };
+}
 
     /*
      * Für jedes aktive Fahrzeug wird die bereits vorhandene
