@@ -182,15 +182,11 @@ function activeVehicles() {
         const saved = savedSettings()[id] || {};
         const vehicle = vehicleById(id);
 
-if (saved.drive) {
-    byId(`mkv40-drive-${side}`).value = saved.drive;
-} else {
+byId(`mkv40-drive-${side}`).value =
+    vehicle?.drive_type === 'electric'
+        ? 'electric'
+        : 'fuel';
     
-    byId(`mkv40-drive-${side}`).value =
-        vehicle?.drive_type === 'electric'
-            ? 'electric'
-            : 'fuel';
-}
         byId(`mkv40-consumption-${side}`).value = saved.consumption ?? '';
         byId(`mkv40-price-${side}`).value = saved.price ?? '';
         if (side === 'a') {
