@@ -102,7 +102,10 @@ function activeVehicles() {
                     <div id="mkv40-overage-a" class="mkv40-live">Mehrkilometerpreis: –</div>
                     <label class="mkv40-check"><input id="mkv40-include-a" type="checkbox"><span>Energie-/Kraftstoffkosten von Fahrzeug A zusätzlich mitberechnen</span></label>
                     <div id="mkv40-optional-a" class="mkv40-hidden">` : ''}
-                <div class="mkv40-field"><label>Antriebsart</label><select id="mkv40-drive-${side}"><option value="fuel">Verbrenner</option><option value="electric">Elektro</option></select></div>
+              <div class="mkv40-field">
+  <label>Antriebsart</label>
+  <div id="mkv40-drive-${side}" class="mkv40-drive-info"></div>
+</div>
                 <div class="mkv40-grid">
                     <div class="mkv40-field"><label id="mkv40-consumption-label-${side}">Verbrauch l/100 km</label><input id="mkv40-consumption-${side}" type="number" min="0" step="0.1"></div>
                     <div class="mkv40-field"><label id="mkv40-price-label-${side}">Preis €/Liter</label><input id="mkv40-price-${side}" type="number" min="0" step="0.001"></div>
