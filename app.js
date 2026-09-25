@@ -9,6 +9,10 @@ const n=x=>new Intl.NumberFormat('de-DE').format(Math.round(x||0));
 const money=x=>new Intl.NumberFormat('de-DE',{style:'currency',currency:'EUR'}).format(x||0);
 const iso=d=>new Date(d+'T12:00:00');
 const days=(a,b)=>Math.max(0,Math.round((iso(b)-iso(a))/86400000));
+function normalizeDriveType(value) {
+  const allowed = ['electric', 'petrol', 'diesel', 'hybrid', 'other'];
+  return allowed.includes(value) ? value : 'other';
+}
 async function start(){if(!initClient()){show('setup');return}const {data:{session}}=await db.auth.getSession();if(session){user=session.user;show('app');await load()}else show('auth');db.auth.onAuthStateChange(async(_,s)=>{if(s&&!user){user=s.user;show('app');await load()}if(!s){user=null;show('auth')}})}
 $('#saveSetup').onclick=()=>{localStorage.setItem('sb_url',$('#sbUrl').value.trim().replace(/\/$/,''));localStorage.setItem('sb_key',$('#sbKey').value.trim());location.reload()};
 $('#resetConfig').onclick=()=>{localStorage.removeItem('sb_url');localStorage.removeItem('sb_key');location.reload()};
@@ -22,7 +26,12 @@ function cardHtml(v){const c=calc(v),arch=v.is_active===false,warn=c.forecast>v.
 $('#readingForm').onsubmit=async e=>{e.preventDefault();$('#saveMsg').textContent='Speichere…';const p={user_id:user.id,vehicle_id:$('#vehicleSelect').value,reading_date:$('#readingDate').value,odometer:+$('#odometer').value,note:$('#note').value.trim()||null};const {error}=await db.from('readings').insert(p);$('#saveMsg').textContent=error?error.message:'Gespeichert und synchronisiert.';if(!error){$('#odometer').value='';$('#note').value='';await load()}}
 async function removeReading(id){if(!confirm('Ablesung wirklich löschen?'))return;const {error}=await db.from('readings').delete().eq('id',id);if(error)alert(error.message);else await load()}
 $('#addVehicle').onclick=()=>openVehicle();$('#cancelVehicle').onclick=()=>$('#vehicleDialog').close();
-function openVehicle(id=null){const v=vehicles.find(x=>x.id===id);$('#dialogTitle').textContent=v?'Fahrzeug bearbeiten':'Neues Fahrzeug';$('#editId').value=v?.id||'';$('#editName').value=v?.name||'';$('#editShort').value=v?.short_name||'';$('#editStart').value=v?.contract_start||'';$('#editEnd').value=v?.contract_end||'';$('#editStartKm').value=v?.start_odometer??0;$('#editTotal').value=v?.total_km??50000;$('#editTolerance').value=v?.tolerance_km??2500;$('#editOver').value=v?.overage_eur_km??0;$('#editUnder').value=v?.underage_eur_km??0;$('#vehicleDialog').showModal()}
-$('#vehicleForm').onsubmit=async e=>{e.preventDefault();const id=$('#editId').value,p={user_id:user.id,name:$('#editName').value.trim(),short_name:$('#editShort').value.trim(),contract_start:$('#editStart').value,contract_end:$('#editEnd').value,start_odometer:+$('#editStartKm').value,total_km:+$('#editTotal').value,tolerance_km:+$('#editTolerance').value,overage_eur_km:+$('#editOver').value,underage_eur_km:+$('#editUnder').value};if(!id)p.is_active=true;const q=id?db.from('vehicles').update(p).eq('id',id):db.from('vehicles').insert(p);const {error}=await q;if(error)return alert(error.message);$('#vehicleDialog').close();await load()};
+function openVehicle(id=null){const v=vehicles.find(x=>x.id===id);$('#dialogTitle').textContent=v?'Fahrzeug bearbeiten':'Neues Fahrzeug';$('#editId').value=v?.id||'';$('#editName').value=v?.name||'';$('#editShort').value=v?.short_name||'';$('#editStart').value=v?.contract_start||'';$('#editEnd').value=v?.contract_end||'';$('#editStartKm').value=v?.start_odometer??0;$('#editTotal').value=v?.total_km??50000;$('#editTolerance').value=v?.tolerance_km??2500;$('#editOver').value=v?.overage_eur_km??0;$('#editUnder').value=v?.underage_eur_km??0;const driveTypeField = $('#editDriveType');
+if (driveTypeField) {
+  driveTypeField.value = normalizeDriveType(v?.drive_type);
+}
+                              $('#vehicleDialog').showModal()}
+$('#vehicleForm').onsubmit=async e=>{e.preventDefault();const id=$('#editId').value,p={user_id:user.id,name:$('#editName').value.trim(),short_name:$('#editShort').value.trim(),contract_start:$('#editStart').value,contract_end:$('#editEnd').value,start_odometer:+$('#editStartKm').value,total_km:+$('#editTotal').value,tolerance_km:+$('#editTolerance').value,overage_eur_km:+$('#editOver').value,underage_eur_km:+$('#editUnder').value,
+drive_type:normalizeDriveType($('#editDriveType')?.value)};if(!id)p.is_active=true;const q=id?db.from('vehicles').update(p).eq('id',id):db.from('vehicles').insert(p);const {error}=await q;if(error)return alert(error.message);$('#vehicleDialog').close();await load()};
 async function setActive(id,on){if(!on&&!confirm('Fahrzeug archivieren? Alle Ablesungen bleiben erhalten.'))return;const {error}=await db.from('vehicles').update({is_active:on,archived_at:on?null:new Date().toISOString()}).eq('id',id);if(error)alert(error.message);else await load()}
 start();
