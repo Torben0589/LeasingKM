@@ -34,7 +34,19 @@
     <p id="authMsg" class="msg"></p>
   </section>
   <section id="app" class="hidden">
-    <div class="toolbar"><span id="sync" class="sync">● bereit</span><button id="addVehicle">+ Fahrzeug</button></div>
+    <div class="toolbar">
+  <span id="sync" class="sync">● synchronisiert</span>
+
+  <div class="vehicle-actions">
+    <button id="addVehicle">+ Fahrzeug</button>
+
+    <button type="button"
+            onclick="window.PVEnergy.openSettings()"
+            class="ghost">
+      ☀ Energie & PV
+    </button>
+  </div>
+</div>
     <nav class="tabs"><button class="tab active" data-view="active">Aktiv</button><button class="tab" data-view="archived">Archiv</button></nav>
     <div id="cards" class="cards"></div>
 
