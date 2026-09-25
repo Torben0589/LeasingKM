@@ -35,21 +35,19 @@ $('#vehicleForm').onsubmit=async e=>{e.preventDefault();const id=$('#editId').va
 drive_type:normalizeDriveType($('#editDriveType')?.value)};if(!id)p.is_active=true;const q=id?db.from('vehicles').update(p).eq('id',id):db.from('vehicles').insert(p);const {error}=await q;if(error)return alert(error.message);$('#vehicleDialog').close();await load()};
 async function setActive(id,on){if(!on&&!confirm('Fahrzeug archivieren? Alle Ablesungen bleiben erhalten.'))return;const {error}=await db.from('vehicles').update({is_active:on,archived_at:on?null:new Date().toISOString()}).eq('id',id);if(error)alert(error.message);else await load()}
 window.getFuhrparkVehicles = function () {
-  return Array.isArray(vehicles)
-    ? vehicles
-    : [];
+    return vehicles;
 };
 
 window.getFuhrparkCalculation = function (vehicleId) {
-  const vehicle = vehicles.find(
-    item => item.id === vehicleId
-  );
+    const vehicle = vehicles.find(
+        item => item.id === vehicleId
+    );
 
-  if (!vehicle) {
-    return null;
-  }
+    if (!vehicle) {
+        return null;
+    }
 
-  return calc(vehicle);
+    return calc(vehicle);
 };
 
 start();
