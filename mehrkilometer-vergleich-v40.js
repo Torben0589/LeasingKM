@@ -201,18 +201,107 @@ byId(`mkv40-drive-${side}`).value =
         updateLabels(side);
     }
 
+function selectDefaultVehicles(vehicleList) {
+    if (!Array.isArray(vehicleList) || vehicleList.length < 2) {
+        return {
+            vehicleA: null,
+            vehicleB: null
+        };
+    }
+
+    /*
+     * Für jedes aktive Fahrzeug wird die bereits vorhandene
+     * Prognoseberechnung aus app.js verwendet.
+     */
+    const evaluatedVehicles = vehicleList.map(vehicle => {
+        let calculation = null;
+
+        try {
+            calculation =
+                typeof calc === 'function'
+                    ? calc(vehicle)
+                    : null;
+        } catch (error) {
+            console.warn(
+                'Prognose konnte für das Fahrzeug nicht berechnet werden:',
+                vehicle,
+                error
+            );
+        }
+
+        return {
+            vehicle,
+            calculation
+        };
+    });
+
+    /*
+     * Roter Bereich:
+     * prognostizierte kostenpflichtige Mehrkilometer größer als 0.
+     *
+     * Bei mehreren betroffenen Fahrzeugen wird nach den
+     * höchsten prognostizierten Mehrkosten sortiert.
+     */
+    const vehiclesInRedArea = evaluatedVehicles
+        .filter(item => item.calculation?.over > 0)
+        .sort((first, second) => {
+            return (
+                (second.calculation?.cost || 0) -
+                (first.calculation?.cost || 0)
+            );
+        });
+
+    /*
+     * Fahrzeug A:
+     * bevorzugt das kritischste Fahrzeug,
+     * ansonsten das erste aktive Fahrzeug.
+     */
+    const vehicleA =
+        vehiclesInRedArea[0]?.vehicle ||
+        vehicleList[0];
+
+    /*
+     * Fahrzeug B:
+     * bevorzugt ein anderes Fahrzeug,
+     * dessen Prognose noch im kostenfreien Bereich liegt.
+     */
+    const vehicleB =
+        evaluatedVehicles.find(item => {
+            return (
+                item.vehicle.id !== vehicleA.id &&
+                (item.calculation?.over || 0) === 0
+            );
+        })?.vehicle ||
+        vehicleList.find(vehicle => {
+            return vehicle.id !== vehicleA.id;
+        }) ||
+        null;
+
+    return {
+        vehicleA,
+        vehicleB
+    };
+}
+    
     function openDialog() {
         const list = activeVehicles();
-        
-        console.log('V40 Länge:', list.length);
-        console.log('V40 Fahrzeuge:', list);
         
         if (list.length < 2) return alert('Mindestens zwei aktive Fahrzeuge werden benötigt.');
         const options = list.map(v => `<option value="${v.id}">${v.short_name || v.name}</option>`).join('');
         byId('mkv40-vehicle-a').innerHTML = options;
         byId('mkv40-vehicle-b').innerHTML = options;
-        byId('mkv40-vehicle-a').value = list[0].id;
-        byId('mkv40-vehicle-b').value = list[1].id;
+const defaultSelection =
+    selectDefaultVehicles(list);
+
+if (defaultSelection.vehicleA) {
+    byId('mkv40-vehicle-a').value =
+        defaultSelection.vehicleA.id;
+}
+
+if (defaultSelection.vehicleB) {
+    byId('mkv40-vehicle-b').value =
+        defaultSelection.vehicleB.id;
+}
         loadVehicle('a');
         loadVehicle('b');
         byId('mkv40-result').classList.remove('visible');
