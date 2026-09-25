@@ -194,6 +194,10 @@ function activeVehicles() {
 
     function openDialog() {
         const list = activeVehicles();
+        
+        console.log('V40 Länge:', list.length);
+        console.log('V40 Fahrzeuge:', list);
+        
         if (list.length < 2) return alert('Mindestens zwei aktive Fahrzeuge werden benötigt.');
         const options = list.map(v => `<option value="${v.id}">${v.short_name || v.name}</option>`).join('');
         byId('mkv40-vehicle-a').innerHTML = options;
