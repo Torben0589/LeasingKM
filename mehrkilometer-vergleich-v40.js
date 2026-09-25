@@ -9,11 +9,22 @@
     const STORAGE_KEY = 'fuhrpark_mehrkilometer_v40';
     const byId = id => document.getElementById(id);
 
-    function activeVehicles() {
-        return Array.isArray(window.vehicles)
-            ? window.vehicles.filter(vehicle => vehicle.is_active !== false)
+function activeVehicles() {
+
+    try {
+
+        return Array.isArray(vehicles)
+            ? vehicles.filter(vehicle => vehicle.is_active !== false)
             : [];
+
+    } catch (error) {
+
+        return [];
+
     }
+
+}
+``
 
     function vehicleById(id) {
         return activeVehicles().find(vehicle => vehicle.id === id);
