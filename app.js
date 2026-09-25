@@ -39,5 +39,17 @@ window.getFuhrparkVehicles = function () {
     ? vehicles
     : [];
 };
-window.vehicles = vehicles;
+
+window.getFuhrparkCalculation = function (vehicleId) {
+  const vehicle = vehicles.find(
+    item => item.id === vehicleId
+  );
+
+  if (!vehicle) {
+    return null;
+  }
+
+  return calc(vehicle);
+};
+
 start();
